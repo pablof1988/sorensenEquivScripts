@@ -130,7 +130,7 @@ signifPvals_d0_0.4444$CC
 signifPvals_d0_0.4444$MF
 sink(file = NULL)
 # For a more restrictive d0 = 0.2857:
-signifPvals_d0_0.2857 <- adjSignifPvals(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)))
+signifPvals_d0_0.2857 <- adjSignifPvals(upgrade(pbtAllOntosAndLevels2, d0 = 1/(1 + 2*1.25)))
 
 # In BP ontology,
 signifPvals_d0_0.2857$BP
