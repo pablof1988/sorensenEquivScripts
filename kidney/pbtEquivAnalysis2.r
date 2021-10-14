@@ -6,7 +6,7 @@ load("pbtGeneLists2.rda") # kidney gene lists
 library(goSorensen)
 library(equivStandardTest)
 data(humanEntrezIDs)
-source('adjSignifPvals.r')
+source('..\\adjSignifPvals.R')
 
 sapply(pbtGeneLists2, length)
 
