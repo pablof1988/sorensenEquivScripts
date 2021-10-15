@@ -24,8 +24,15 @@ adjSignifPvals <- function(x, alpha = 0.05, adj.meth = "holm") {
         for (iLst2 in names(x[[onto]][[lev]][[iLst1]])) {
           thisPair <- paste(iLst1, iLst2, sep = ".")
           if (thisPair %in% signifPairNams) {
-            signifPairs[[thisPair]] <- list(p.value = adjPvals[[onto]][[lev]][thisPair],
-                                            enrichTab = getTable(x[[onto]][[lev]][[iLst1]][[iLst2]]))
+            nboot <- getNboot(x[[onto]][[lev]][[iLst1]][[iLst2]])
+            if (is.null(nboot)){
+              signifPairs[[thisPair]] <- list(p.value = adjPvals[[onto]][[lev]][thisPair],
+                                              enrichTab = getTable(x[[onto]][[lev]][[iLst1]][[iLst2]]))
+            } else {
+              signifPairs[[thisPair]] <- list(p.value = adjPvals[[onto]][[lev]][thisPair],
+                                              enrichTab = getTable(x[[onto]][[lev]][[iLst1]][[iLst2]]),
+                                              nboot = nboot)
+            }
           }
         }
       }

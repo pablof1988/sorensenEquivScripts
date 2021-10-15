@@ -1,26 +1,16 @@
 library(goSorensen)
 library(equivStandardTest)
-source("..\\adjSignifPvals.R")
+source("adjSignifPvals.R")
 data(humanEntrezIDs)
 
 
-# package goSorensen authomatically charges object "allOncoGeneLists"
+# package goSorensen authomatically charges object "allOncoGeneLists" 
 allOncoGeneLists
 sapply(allOncoGeneLists, length)
 
 # Formerly, the original set of gene lists was reduced to those with almost 100 genes:
 # allOncoGeneLists <- allOncoGeneLists[sapply(allOncoGeneLists, length) >= 100]
 # sapply(allOncoGeneLists, length)
-
-numLists <- length(allOncoGeneLists)
-lstNams <- names(allOncoGeneLists)
-for (i in 2:length(allOncoGeneLists)) {
-  for (j in 1:(i-1)) {
-    cat(lstNams[i], "&", lstNams[j], length(intersect(allOncoGeneLists[[i]], allOncoGeneLists[[j]])),
-        "common genes of", length(allOncoGeneLists[[i]]), length(allOncoGeneLists[[j]]), "\n")
-  }
-}
-
 
 # The generic function "equivTestSorensen" in package "goSorensen" implements the equivalence test based
 # on the Sorensen-Dice distance.
@@ -33,64 +23,40 @@ for (i in 2:length(allOncoGeneLists)) {
 # There are also methods for data already summarized in form of 2x2 contingency tables of joint enrichment.
 
 # Examples:
-# Equivalence test between gene lists 'waldman' and 'atlas', in dataset 'cancerGeneLists',
+# Equivalence test between gene lists 'waldman' and 'atlas', in dataset 'cancerGeneLists', 
 # at level 4 of the BP ontology:
-# (Slightly time consuming, you can jump this statement because package 'goSorensen' authomatically
-# charges 'waldman_atlas.BP.4' dataset)
-waldman_atlas.BP.4 <- equivTestSorensen(allOncoGeneLists[["waldman"]], allOncoGeneLists[["atlas"]],
-                                        geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db",
+waldman_atlas.BP.4 <- equivTestSorensen(allOncoGeneLists[["waldman"]], allOncoGeneLists[["atlas"]], 
+                                        geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db", 
                                         onto = "BP", GOLevel = 4, listNames = c("waldman", "atlas"))
-waldman_atlas.BP.4
-class(waldman_atlas.BP.4)
-names(waldman_atlas.BP.4)
-
-waldman_atlas.BP.4$statistic
-waldman_atlas.BP.4$p.value
-# or:
+getTable(waldman_atlas.BP.4)
 getPvalue(waldman_atlas.BP.4)
-
-waldman_atlas.BP.4$estimate
-# or
-getDissimilarity(waldman_atlas.BP.4)
-
-waldman_atlas.BP.4$stderr
-# or:
 getSE(waldman_atlas.BP.4)
 
-waldman_atlas.BP.4$conf.int
-# or:
-getUpper(waldman_atlas.BP.4)
+# Bootstrap approach:
+boot.waldman_atlas.BP.4 <- equivTestSorensen(allOncoGeneLists[["waldman"]], allOncoGeneLists[["atlas"]], 
+                                             boot = TRUE,
+                                             geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db", 
+                                             onto = "BP", GOLevel = 4, listNames = c("waldman", "atlas"))
+getTable(boot.waldman_atlas.BP.4)
+getPvalue(boot.waldman_atlas.BP.4)
+getSE(boot.waldman_atlas.BP.4)
 
-getDissimilarity(waldman_atlas.BP.4) + qnorm(0.95) * getSE(waldman_atlas.BP.4)
+# A faster way to obtain boot.waldman_atlas.BP.4:
+boot.waldman_atlas.BP.4 <- upgrade(waldman_atlas.BP.4, boot = TRUE)
+getPvalue(boot.waldman_atlas.BP.4)
 
-waldman_atlas.BP.4$null.value # d0
-
-waldman_atlas.BP.4$alternative
-waldman_atlas.BP.4$method
-
-waldman_atlas.BP.4$enrichTab
-# or:
-getTable(waldman_atlas.BP.4)
-
-upgrade(waldman_atlas.BP.4, d0 = 1/(1 + 10/9)) # d0 = 0.4737
 waldman_atlas.BP.4_strict <- upgrade(waldman_atlas.BP.4, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
 waldman_atlas.BP.4_strict
+
 class(waldman_atlas.BP.4_strict)
 upgrade(waldman_atlas.BP.4, d0 = 1/(1 + 2*1.25), conf.level = 0.99)
-
-# Number of annotated GO items in the union of both gene sets, in ontology BP at level 4:
-s <- sum(getTable(waldman_atlas.BP.4))
-names(s) <- "annotated GO items"
-s
 
 # All pairwise equivalence tests at level 4 of the BP ontology (quite time consuming, you can jump
 # this sentence and use the dataset 'BP.4' which is directly charged with package 'goSorensen')
 BP.4 <- equivTestSorensen(allOncoGeneLists,
-                          geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db",
+                          geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db", 
                           onto = "BP", GOLevel = 4)
 
-class(BP.4)
-BP.4
 getPvalue(BP.4)
 getPvalue(BP.4, simplify = FALSE)
 
@@ -100,30 +66,32 @@ getDissimilarity(BP.4, simplify = FALSE)
 getUpper(BP.4)
 getUpper(BP.4, simplify = FALSE)
 
-getDissimilarity(BP.4, simplify = FALSE) + qnorm(0.95) * getSE(BP.4, simplify = FALSE)
-
 getSE(BP.4)
 getSE(BP.4, simplify = FALSE)
+
 getTable(BP.4)
 
 BP.4_strict <- upgrade(BP.4, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
 BP.4_strict
-class(BP.4_strict)
-
-upgrade(BP.4, d0 = 1/(1 + 2*1.25),
-        conf.level = 0.90, check.table = FALSE)
+getPvalue(BP.4_strict)
 
 # (Very time consuming. Alternatively, you may use the dataset 'cancerEquivSorensen' directly,
 # it is automatically charged with the package 'goSorensen'),
-# By default, the tests are iterated over all GO ontologies and for levels 3 to 10: (these
-# results are available at  cancerEquivSorensen.rda file)
-cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists,
-                                            geneUniverse = humanEntrezIDs,
+# By default, the tests are iterated over all GO ontologies and for levels 3 to 10:
+cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists, 
+                                            geneUniverse = humanEntrezIDs, 
                                             orgPackg = "org.Hs.eg.db")
-#save(cancerEquivSorensen, file = "cancerEquivSorensen.rda")
-#load('cancerEquivSorensen.rda')
+set.seed(123)
+boot.cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists,
+                                                 boot = TRUE,
+                                                 geneUniverse = humanEntrezIDs, 
+                                                 orgPackg = "org.Hs.eg.db")
+# Or, much more faster:
+set.seed(123)
+boot.cancerEquivSorensen <- upgrade(cancerEquivSorensen, boot = TRUE)
+
 # # (Also very time consuming.) It is not required to iterate over all ontologies,
-# # "allEquivTestSorensen" iterates these procedures over the specified GO ontologies and levels,
+# # "allEquivTestSorensen" iterates these procedures over the specified GO ontologies and levels, 
 # # e.g., to iterate only over the GO ontologies MF and BP and levels 5 and 6:
 # allEquivTestSorensen(allOncoGeneLists, ontos = c("MF", "BP"), GOLevels = 5:6,
 #                      geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db")
@@ -133,9 +101,9 @@ cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists,
 
 cancerEquivSorensen
 
-# From 21 possible p-values (21 = 7 * (7 - 1) / 2) and after the Holm's adjustment for testing multiplicity,
+# From 21 possible p-values (21 = 7 * (7 - 1) / 2) and after the Holm's adjustment for testing multiplicity, 
 # identify those who are <= 0.05? (Excluding NA values)
-#   BUT JUMP TO LINE 248 FOR A MORE INFORMATIVE OUTPUT, INCLUDING THE 2x2 CONTINGENCY TABLES OF ENRICHMENT
+# BUT JUMP TO LINE 210 FOR A MORE INFORMATIVE OUTPUT, INCLUDING THE 2x2 CONTINGENCY TABLES OF ENRICHMENT
 # ---------------------------------------------------------------------------------------------------------
 # For ontology BP:
 # Under d0 = 0.4444
@@ -183,10 +151,6 @@ sapply(getPvalue(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)), onto = "MF")
 
 # **** Stable but possibly less interesting (less similarity between lists) results for MF ontology ****
 # ---------------------------------------------------------------------------------------------------------
-
-class(cancerEquivSorensen$BP$`level 4`)
-class(cancerEquivSorensen$BP$`level 4`$humanlymph)
-class(cancerEquivSorensen$BP$`level 4`$humanlymph$atlas)
 
 # 2x2 contingecy tables of joint enrichment:
 getTable(cancerEquivSorensen)
@@ -242,10 +206,6 @@ getSE(cancerEquivSorensen$BP$`level 4`)
 
 cancerEquivSorensen2 <- upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
 cancerEquivSorensen2
-class(cancerEquivSorensen2)
-class(cancerEquivSorensen2$BP$`level 4`)
-class(cancerEquivSorensen$BP$`level 4`$humanlymph)
-class(cancerEquivSorensen$BP$`level 4`$humanlymph$atlas)
 
 # CAUTION! Some of these "significant" results may have a very low reliability if the joint enrichment
 # frequencies are extremely low.
@@ -253,22 +213,31 @@ class(cancerEquivSorensen$BP$`level 4`$humanlymph$atlas)
 # in order to put these values in an adequate context (e.g., those who are not very credible):
 signifPvals_d0_0.4444 <- adjSignifPvals(cancerEquivSorensen)
 
-# In BP ontology, all detected equivalencies seem very reliable:
 signifPvals_d0_0.4444$BP
-# In CC, this is not so clear. The few significant equivalencies are associated to low enrichment
-# frequencies:
 signifPvals_d0_0.4444$CC
-# In MF, the constantly present equivalence between Vogelstein and sanger seems especially reliable
-# only at levels 4 and 5:
 signifPvals_d0_0.4444$MF
 
 # For a more restrictive d0 = 0.2857:
 signifPvals_d0_0.2857 <- adjSignifPvals(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)))
 
-# In BP ontology, a consistent and reliable set of equivalences is still present, at all GO levels:
 signifPvals_d0_0.2857$BP
-# In CC, even less significant equivalencies and not very reliable, only for the first GO levels:
 signifPvals_d0_0.2857$CC
-# In MF, again the same results: a persistent equivalence between Vogelstein and sanger, at GO
-# levels 4 and 5:
 signifPvals_d0_0.2857$MF
+
+# *********************************************************************************
+# Bootstrap approach, tends to be conservative under low enrichment frequencies so the positive
+# results seem more reliable (the number of valid bootstrap replicates, over 10000, is also displayed):
+boot.signifPvals_d0_0.4444 <- adjSignifPvals(boot.cancerEquivSorensen)
+
+boot.signifPvals_d0_0.4444$BP
+boot.signifPvals_d0_0.4444$CC
+boot.signifPvals_d0_0.4444$MF
+
+# For a more restrictive d0 = 0.2857:
+set.seed(123)
+boot.signifPvals_d0_0.2857 <- adjSignifPvals(upgrade(boot.cancerEquivSorensen, d0 = 1/(1 + 2*1.25), boot = TRUE))
+
+boot.signifPvals_d0_0.2857$BP
+boot.signifPvals_d0_0.2857$CC
+boot.signifPvals_d0_0.2857$MF
+
