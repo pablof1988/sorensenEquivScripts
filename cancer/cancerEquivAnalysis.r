@@ -1,6 +1,6 @@
 library(goSorensen)
 library(equivStandardTest)
-source("adjSignifPvals.R")
+source("..\\adjSignifPvals.R")
 data(humanEntrezIDs)
 
 
@@ -28,8 +28,12 @@ sapply(allOncoGeneLists, length)
 waldman_atlas.BP.4 <- equivTestSorensen(allOncoGeneLists[["waldman"]], allOncoGeneLists[["atlas"]], 
                                         geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db", 
                                         onto = "BP", GOLevel = 4, listNames = c("waldman", "atlas"))
+
+# 2x2 contingency table of jointly enriched BP GO terms at level 4 between gene lists waldman and atlas:
 getTable(waldman_atlas.BP.4)
+# Equivalence test p-value (normal approximation):
 getPvalue(waldman_atlas.BP.4)
+# Sorensen-Dice dissimilarity standard error:
 getSE(waldman_atlas.BP.4)
 
 # Bootstrap approach:
@@ -41,10 +45,24 @@ getTable(boot.waldman_atlas.BP.4)
 getPvalue(boot.waldman_atlas.BP.4)
 getSE(boot.waldman_atlas.BP.4)
 
-# A faster way to obtain boot.waldman_atlas.BP.4:
+# Building the GO terms mutual enrichment contingency table is the slowest step.
+# A faster way to obtain boot.waldman_atlas.BP.4 is to upgrade waldman_atlas.BP.4 to the
+# bootstrap approach (but without unnecessarily building again the contingency table):
 boot.waldman_atlas.BP.4 <- upgrade(waldman_atlas.BP.4, boot = TRUE)
 getPvalue(boot.waldman_atlas.BP.4)
 
+# Similarly, the test can be performed directly from the contingency table:
+boot.waldman_atlas.BP.4 <- equivTestSorensen(getTable(waldman_atlas.BP.4), boot = TRUE)
+getTable(boot.waldman_atlas.BP.4)
+getPvalue(boot.waldman_atlas.BP.4)
+getSE(boot.waldman_atlas.BP.4)
+
+# Package goSorensen was designed under the object-oriented programming paradigm. All operations,
+# like 'equivTestSorensen', have method functions to perform the same operation from adequate classes
+# of objects, like performing the equivalence test from two gene lists, from scratch, or to perform
+# the equivalence test from the enrichment contingency table associated to them.
+
+# Using an stricter equivalence limit:
 waldman_atlas.BP.4_strict <- upgrade(waldman_atlas.BP.4, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
 waldman_atlas.BP.4_strict
 
@@ -57,12 +75,17 @@ BP.4 <- equivTestSorensen(allOncoGeneLists,
                           geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db", 
                           onto = "BP", GOLevel = 4)
 
+# All p-values in vector form:
 getPvalue(BP.4)
+# The symmetric matrix of all p-values:
 getPvalue(BP.4, simplify = FALSE)
 
+# All Sorensen-Dice dissimiliraties:
 getDissimilarity(BP.4)
 getDissimilarity(BP.4, simplify = FALSE)
 
+# 95% upper limits of all one-sided confidence intervals for the 
+# Sorensen-Dice dissimilarity:
 getUpper(BP.4)
 getUpper(BP.4, simplify = FALSE)
 
@@ -75,18 +98,24 @@ BP.4_strict <- upgrade(BP.4, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
 BP.4_strict
 getPvalue(BP.4_strict)
 
-# (Very time consuming. Alternatively, you may use the dataset 'cancerEquivSorensen' directly,
+# (Extremely time consuming, for the same reason as before: building all
+# contingency tables. 
+# Alternatively, you may use the dataset 'cancerEquivSorensen' directly,
 # it is automatically charged with the package 'goSorensen'),
 # By default, the tests are iterated over all GO ontologies and for levels 3 to 10:
 cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists, 
                                             geneUniverse = humanEntrezIDs, 
                                             orgPackg = "org.Hs.eg.db")
-set.seed(123)
-boot.cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists,
-                                                 boot = TRUE,
-                                                 geneUniverse = humanEntrezIDs, 
-                                                 orgPackg = "org.Hs.eg.db")
-# Or, much more faster:
+
+# The same but with the bootstrap approach. Even more time consuming and clearly
+# unnecessary, see below for a faster approach:
+# set.seed(123)
+# boot.cancerEquivSorensen <- allEquivTestSorensen(allOncoGeneLists,
+#                                                  boot = TRUE,
+#                                                  geneUniverse = humanEntrezIDs, 
+#                                                  orgPackg = "org.Hs.eg.db")
+
+# It takes its time, but it is much more faster:
 set.seed(123)
 boot.cancerEquivSorensen <- upgrade(cancerEquivSorensen, boot = TRUE)
 
@@ -101,116 +130,15 @@ boot.cancerEquivSorensen <- upgrade(cancerEquivSorensen, boot = TRUE)
 
 cancerEquivSorensen
 
-# From 21 possible p-values (21 = 7 * (7 - 1) / 2) and after the Holm's adjustment for testing multiplicity, 
-# identify those who are <= 0.05? (Excluding NA values)
-# BUT JUMP TO LINE 210 FOR A MORE INFORMATIVE OUTPUT, INCLUDING THE 2x2 CONTINGENCY TABLES OF ENRICHMENT
-# ---------------------------------------------------------------------------------------------------------
-# For ontology BP:
-# Under d0 = 0.4444
-sapply(getPvalue(cancerEquivSorensen, onto = "BP")[["BP"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
+# The above multiple equivalence tests are performed without any adjustment for
+# testing multiplicity, which is the responsibility of the user. Some suggestions
+# follow on how to perform this task.
 
-# Under a more restrictive d0 = 0.2857
-sapply(getPvalue(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)), onto = "BP")[["BP"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
-# ************** Highly stable results along all GO levels for BP ontology **************************
-# ************** a set of equivalent lists seems to be identified          **************************
-
-# ---------------------------------------------------------------------------------------------------------
-# For ontology CC:
-# Under d0 = 0.4444
-sapply(getPvalue(cancerEquivSorensen, onto = "CC")[["CC"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
-
-# Under a more restrictive d0 = 0.2857
-sapply(getPvalue(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)), onto = "CC")[["CC"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
-# **** Stable but possibly less interesting (less similarity between lists) results for CC ontology ****
-
-# ---------------------------------------------------------------------------------------------------------
-# For ontology MF:
-# Under d0 = 0.4444
-sapply(getPvalue(cancerEquivSorensen, onto = "MF")[["MF"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
-
-# Under a more restrictive d0 = 0.2857
-sapply(getPvalue(upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)), onto = "MF")[["MF"]], function(thisLevPvals){
-  thisLevPvals <- p.adjust(thisLevPvals[!is.na(thisLevPvals)], method = "holm")
-  thisLevPvals[thisLevPvals <= 0.05]
-})
-
-# **** Stable but possibly less interesting (less similarity between lists) results for MF ontology ****
-# ---------------------------------------------------------------------------------------------------------
-
-# 2x2 contingecy tables of joint enrichment:
-getTable(cancerEquivSorensen)
-getTable(cancerEquivSorensen, GOLevel = "level 6")
-getTable(cancerEquivSorensen, GOLevel = "level 6", listNames = c("waldman", "sanger"))
-getTable(cancerEquivSorensen, GOLevel = "level 6", onto = "BP")
-getTable(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", listNames = c("waldman", "sanger"))
-getTable(cancerEquivSorensen$BP$`level 4`)
-
-# p-values:
-getPvalue(cancerEquivSorensen)
-getPvalue(cancerEquivSorensen, simplify = FALSE)
-getPvalue(cancerEquivSorensen, GOLevel = "level 6")
-getPvalue(cancerEquivSorensen, GOLevel = "level 6", simplify = FALSE)
-getPvalue(cancerEquivSorensen, GOLevel = "level 6", listNames = c("waldman", "sanger"))
-getPvalue(cancerEquivSorensen, GOLevel = "level 6", onto = "BP")
-getPvalue(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", simplify = FALSE)
-getPvalue(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", listNames = c("waldman", "sanger"))
-getPvalue(cancerEquivSorensen$BP$`level 4`)
-
-# Sorensen-Dice dissimilarity:
-getDissimilarity(cancerEquivSorensen)
-getDissimilarity(cancerEquivSorensen, simplify = FALSE)
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6")
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6", simplify = FALSE)
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6", listNames = c("waldman", "sanger"))
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6", onto = "BP")
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", simplify = FALSE)
-getDissimilarity(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", listNames = c("waldman", "sanger"))
-getDissimilarity(cancerEquivSorensen$BP$`level 4`)
-
-# Upper confidence limits:
-getUpper(cancerEquivSorensen)
-getUpper(cancerEquivSorensen, simplify = FALSE)
-getUpper(cancerEquivSorensen, GOLevel = "level 6")
-getUpper(cancerEquivSorensen, GOLevel = "level 6", simplify = FALSE)
-getUpper(cancerEquivSorensen, GOLevel = "level 6", listNames = c("waldman", "sanger"))
-getUpper(cancerEquivSorensen, GOLevel = "level 6", onto = "BP")
-getUpper(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", simplify = FALSE)
-getUpper(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", listNames = c("waldman", "sanger"))
-getUpper(cancerEquivSorensen$BP$`level 4`)
-
-# Standard error of the Sorensen-Dice dissimilarity estimate:
-getSE(cancerEquivSorensen)
-getSE(cancerEquivSorensen, simplify = FALSE)
-getSE(cancerEquivSorensen, GOLevel = "level 6")
-getSE(cancerEquivSorensen, GOLevel = "level 6", simplify = FALSE)
-getSE(cancerEquivSorensen, GOLevel = "level 6", listNames = c("waldman", "sanger"))
-getSE(cancerEquivSorensen, GOLevel = "level 6", onto = "BP")
-getSE(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", simplify = FALSE)
-getSE(cancerEquivSorensen, GOLevel = "level 6", onto = "BP", listNames = c("waldman", "sanger"))
-getSE(cancerEquivSorensen$BP$`level 4`)
-
-cancerEquivSorensen2 <- upgrade(cancerEquivSorensen, d0 = 1/(1 + 2*1.25)) # d0 = 0.2857
-cancerEquivSorensen2
-
-# CAUTION! Some of these "significant" results may have a very low reliability if the joint enrichment
-# frequencies are extremely low.
-# This function returns the adjusted significant p-values jointly with the enrichment contingency tables,
-# in order to put these values in an adequate context (e.g., those who are not very credible):
+# From 21 possible p-values (21 = 7 * (7 - 1) / 2) and after the Holm's adjustment for 
+# testing multiplicity, identify those who are <= 0.05:
+# Function adjSignifPvals in script "adjSignifPvals.R" returns the adjusted significant p-values
+# jointly with the enrichment contingency tables, in order to put these values in an adequate
+# context (e.g., those who are not very credible due to low table frequencies):
 signifPvals_d0_0.4444 <- adjSignifPvals(cancerEquivSorensen)
 
 signifPvals_d0_0.4444$BP
@@ -224,9 +152,11 @@ signifPvals_d0_0.2857$BP
 signifPvals_d0_0.2857$CC
 signifPvals_d0_0.2857$MF
 
-# *********************************************************************************
-# Bootstrap approach, tends to be conservative under low enrichment frequencies so the positive
-# results seem more reliable (the number of valid bootstrap replicates, over 10000, is also displayed):
+# The bootstrap version of these tests tends to be more exact (less danger of commiting a type I
+# error) and, in any case, tends to be conservative under low enrichment frequencies. So the positive
+# results seem more reliable. The number of valid bootstrap replicates, over 10000, is also 
+# displayed. Under low table frequencies, some generated bootstrap tables are not adequate for
+# Sorensen-Dice computations, but this induces a conservative tendency in the test:
 boot.signifPvals_d0_0.4444 <- adjSignifPvals(boot.cancerEquivSorensen)
 
 boot.signifPvals_d0_0.4444$BP
@@ -241,3 +171,7 @@ boot.signifPvals_d0_0.2857$BP
 boot.signifPvals_d0_0.2857$CC
 boot.signifPvals_d0_0.2857$MF
 
+# High level of consistency between normal and bootstrap results is a general trend, 
+# with greater p-values in the bootstrap case, as expected. For example:
+signifPvals_d0_0.2857$BP$`level 5`
+boot.signifPvals_d0_0.2857$BP$`level 5`

@@ -4,7 +4,7 @@
 
 library(goSorensen)
 library(equivStandardTest)
-source("adjSignifPvals.R")
+source("..\\adjSignifPvals.R")
 data(humanEntrezIDs)
 
 load("pbtGeneLists2.rda")
