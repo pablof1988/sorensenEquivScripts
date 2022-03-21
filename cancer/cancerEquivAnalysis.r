@@ -1,5 +1,4 @@
 library(goSorensen)
-library(equivStandardTest)
 source("..\\adjSignifPvals.R")
 data(humanEntrezIDs)
 
