@@ -1,6 +1,9 @@
 library(goSorensen)
 source("..\\adjSignifPvals.R")
-data(humanEntrezIDs)
+
+# humanEntrezIDs is loaded with goSorensen. Manually load other "gene universes"
+# for other applications:
+# data(humanEntrezIDs)
 
 
 # package goSorensen authomatically charges object "allOncoGeneLists" 

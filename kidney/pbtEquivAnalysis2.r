@@ -4,7 +4,7 @@
 
 library(goSorensen)
 source("..\\adjSignifPvals.R")
-data(humanEntrezIDs)
+# data(humanEntrezIDs)
 
 load("pbtGeneLists2.rda")
 
@@ -16,8 +16,10 @@ sapply(pbtGeneLists2, length)
 # above (line 65):
 pbtAllOntosAndLevels2 <- allEquivTestSorensen(pbtGeneLists2, 
                                               geneUniverse = humanEntrezIDs, orgPackg = "org.Hs.eg.db")
+# save(pbtAllOntosAndLevels2, file = "pbtAllOntosAndLevels2.rda")
 
 boot.pbtAllOntosAndLevels2 <- upgrade(pbtAllOntosAndLevels2, boot = TRUE)
+# save(pbtAllOntosAndLevels2, file = "pbtAllOntosAndLevels2.rda")
 
 # load("pbtEquivSorensen2.rda")
 # load("boot.pbtEquivSorensen2.rda")
