@@ -1,13 +1,12 @@
 library(goSorensen)
 source("..\\adjSignifPvals.R")
 
-# humanEntrezIDs is loaded with goSorensen. Manually load other "gene universes"
-# for other applications:
-# data(humanEntrezIDs)
+# load humanEntrezIDs 
+data("humanEntrezIDs")
 
 
-# package goSorensen authomatically charges object "allOncoGeneLists" 
-allOncoGeneLists
+# load "allOncoGeneLists" data set
+data("allOncoGeneLists")
 sapply(allOncoGeneLists, length)
 
 # Formerly, the original set of gene lists was reduced to those with almost 100 genes:
